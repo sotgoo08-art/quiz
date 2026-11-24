@@ -1,8 +1,10 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
 import mysql from 'mysql2/promise';
+import nodePath from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3001);
@@ -542,6 +544,12 @@ app.get('/api/admin/overview', async (_req, res) => {
     res.status(500).json({ error: 'Дашбоардын өгөгдөл татахад алдаа гарлаа' });
   }
 });
+
+// ===== Frontend (Vite build: dist) =====
+const serverDir = nodePath.dirname(fileURLToPath(import.meta.url));
+const distDir = nodePath.join(serverDir, '..', 'dist');
+app.use(express.static(distDir));
+app.get('/', (_req, res) => res.sendFile(nodePath.join(distDir, 'index.html')));
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`API сервер http://localhost:${PORT} дээр ажиллаж байна`);
