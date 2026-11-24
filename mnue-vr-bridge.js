@@ -1,4 +1,4 @@
-﻿export function openQuizFromMnueVr({ playerName, roomName, className, quizUrl = 'https://ТАНЫ-RENDER-QUIZ-ХАЯГ.onrender.com/' }) {
+﻿export function openQuizFromMnueVr({ playerName, roomName, className, quizUrl = 'https://quiz-1-qdt9.onrender.com/' }) {
   const targetUrl = new URL(quizUrl);
 
   if (playerName) targetUrl.searchParams.set('fullName', playerName);
