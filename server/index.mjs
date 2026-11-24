@@ -545,3 +545,10 @@ app.get('/api/admin/overview', async (_req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`API сервер http://localhost:${PORT} дээр ажиллаж байна`);
 });
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
