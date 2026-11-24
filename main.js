@@ -196,6 +196,9 @@ async function showResult() {
   }
 
   drawText(board, `Тест дууслаа! Оноо: ${score} / ${questions.length}`, { bg: '#0f766e', size: 60 });
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage({ type: 'MUBIS_QUIZ_FINISHED', fullName: hudStudent.textContent, score, totalQuestions: questions.length }, '*');
+  }
 }
 
 async function answer(index) {
@@ -279,6 +282,12 @@ function setRole(role) {
     startBtn.textContent = 'Шалгалт эхлүүлэх';
   }
 }
+
+const urlParams = new URLSearchParams(window.location.search);
+const paramName = urlParams.get('fullName') || urlParams.get('name');
+const paramClass = urlParams.get('className');
+if (paramName && fullNameInput) fullNameInput.value = paramName.trim();
+if (paramClass && classNameInput) classNameInput.value = paramClass.trim().toUpperCase();
 
 roleStudentBtn.addEventListener('click', () => setRole('student'));
 roleTeacherBtn.addEventListener('click', () => setRole('teacher'));
@@ -412,3 +421,4 @@ renderer.setAnimationLoop((t) => {
   frame.material.color.setHSL(0.72 + Math.sin(t * 0.001) * 0.05, 0.8, 0.6);
   renderer.render(scene, camera);
 });
+
