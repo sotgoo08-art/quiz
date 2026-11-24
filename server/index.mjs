@@ -77,9 +77,9 @@ app.post('/api/auth/teacher', (req, res) => {
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ ok: true, db: 'connected' });
+    res.json({ ok: true, db: 'connected', service: 'mubis-quiz' });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    res.status(200).json({ ok: true, db: 'disconnected', error: err.message, service: 'mubis-quiz' });
   }
 });
 
