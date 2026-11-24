@@ -289,6 +289,17 @@ const paramClass = urlParams.get('className');
 if (paramName && fullNameInput) fullNameInput.value = paramName.trim();
 if (paramClass && classNameInput) classNameInput.value = paramClass.trim().toUpperCase();
 
+const params = new URLSearchParams(window.location.search);
+const presetName = params.get('fullName') || params.get('name');
+const presetClass = params.get('className');
+
+if (presetName && document.getElementById('fullName')) {
+  document.getElementById('fullName').value = presetName.trim();
+}
+if (presetClass && document.getElementById('className')) {
+  document.getElementById('className').value = presetClass.trim().toUpperCase();
+}
+
 roleStudentBtn.addEventListener('click', () => setRole('student'));
 roleTeacherBtn.addEventListener('click', () => setRole('teacher'));
 
@@ -421,4 +432,5 @@ renderer.setAnimationLoop((t) => {
   frame.material.color.setHSL(0.72 + Math.sin(t * 0.001) * 0.05, 0.8, 0.6);
   renderer.render(scene, camera);
 });
+
 
