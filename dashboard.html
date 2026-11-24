@@ -1,0 +1,645 @@
+﻿<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Багшийн дашбоард — 3D Quiz</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: #0b1026;
+        color: #f8fafc;
+        padding: 24px;
+      }
+      .container { max-width: 1120px; margin: 0 auto; }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .header h1 { margin: 0; font-size: 24px; }
+      .teacher-badge { font-size: 13px; color: #a5b4fc; margin-top: 4px; }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+      button, a.btn {
+        padding: 9px 14px;
+        border-radius: 8px;
+        border: 0;
+        background: #4f46e5;
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover, a.btn:hover { background: #4338ca; }
+      button.secondary { background: #0f766e; }
+      button.secondary:hover { background: #115e59; }
+      button.danger { background: #b91c1c; padding: 6px 10px; font-size: 12px; }
+      button.danger:hover { background: #991b1b; }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin: 20px 0;
+      }
+      .card {
+        background: #111827;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .card .label { color: #94a3b8; font-size: 13px; }
+      .card .val { font-size: 26px; font-weight: 700; margin-top: 6px; }
+
+      .section-box {
+        background: #111827;
+        border: 1px solid #1e293b;
+        border-radius: 14px;
+        padding: 18px;
+        margin-top: 22px;
+      }
+      .section-box h2 { margin: 0 0 12px; font-size: 18px; }
+
+      .mode-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .tab-btn {
+        background: #0f172a;
+        border: 1px solid #334155;
+        color: #cbd5e1;
+      }
+      .tab-btn.active {
+        background: #4f46e5;
+        border-color: #6366f1;
+        color: #fff;
+      }
+
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+
+      .field { margin-bottom: 12px; }
+      .field label { display: block; font-size: 12px; color: #cbd5e1; margin-bottom: 5px; }
+      .field input, .field select, .field textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #fff;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      textarea.sql-area {
+        min-height: 150px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 13px;
+      }
+      .chk-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #cbd5e1;
+        margin-bottom: 12px;
+      }
+      .chk-row input { width: auto; }
+      .msg-box { margin-top: 10px; font-size: 13px; }
+      .msg-ok { color: #4ade80; }
+      .msg-err { color: #f87171; }
+      .hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+      .filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .filters select, .filters input {
+        padding: 9px 12px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #111827;
+        color: #f8fafc;
+        font-size: 14px;
+      }
+      .filters input { min-width: 220px; }
+
+      .table-wrap {
+        background: #111827;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        overflow-x: auto;
+      }
+      table { width: 100%; border-collapse: collapse; }
+      th, td {
+        padding: 11px 14px;
+        border-bottom: 1px solid #1e293b;
+        text-align: left;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      th { background: #1e1b4b; color: #c7d2fe; }
+      .badge-present { color: #4ade80; font-weight: 600; }
+      .badge-absent { color: #f87171; }
+      .status-bar { margin-top: 10px; font-size: 13px; color: #94a3b8; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div>
+          <h1>Багшийн хяналтын самбар</h1>
+          <div class="teacher-badge" id="teacher-name">Багшийн эрх</div>
+        </div>
+        <div class="actions">
+          <button id="refresh-btn">Шинэчлэх</button>
+          <button class="secondary" id="csv-btn">CSV татах</button>
+          <a class="btn" href="/">Нүүр / 3D Тест</a>
+        </div>
+      </div>
+
+      <div class="cards">
+        <div class="card"><div class="label">Нийт бүртгэлтэй оюутан</div><div class="val" id="s-students">0</div></div>
+        <div class="card"><div class="label">Өнөөдрийн ирц</div><div class="val" id="s-present">0</div></div>
+        <div class="card"><div class="label">Нийт оролдлого</div><div class="val" id="s-attempts">0</div></div>
+        <div class="card"><div class="label">Дундаж оноо</div><div class="val" id="s-avg">0</div></div>
+      </div>
+
+      <!-- Оюутны ирц ба оноо -->
+      <div class="section-box">
+        <h2>Оюутны ирц ба шалгалтын дүн</h2>
+        <div class="filters">
+          <select id="group-filter">
+            <option value="">Бүх бүлэг (M.SW...)</option>
+          </select>
+          <input id="search-input" type="text" placeholder="Оюутны нэр эсвэл кодоор хайх..." />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Оюутан</th>
+                <th>Бүлэг</th>
+                <th>Оюутны код</th>
+                <th>Ирц</th>
+                <th>Оноо</th>
+                <th>Хугацаа (сек)</th>
+                <th>Орсон цаг</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="status-bar" id="status-bar">Ачааллаж байна...</div>
+      </div>
+
+      <!-- Тест / Асуулт оруулах хэсэг (Гараар / Файл / SQL) -->
+      <div class="section-box">
+        <h2>Шинэ тест / асуулт оруулах</h2>
+        <div class="mode-tabs">
+          <button type="button" class="tab-btn active" data-tab="manual">1. Гараар шивж оруулах</button>
+          <button type="button" class="tab-btn" data-tab="file">2. Файл хуулж оруулах (CSV / JSON)</button>
+          <button type="button" class="tab-btn" data-tab="sql">3. SQL скриптээр оруулах</button>
+        </div>
+
+        <!-- 1. Гараар -->
+        <form id="manual-form">
+          <div class="field">
+            <label for="qText">Асуултын текст *</label>
+            <input id="qText" type="text" required placeholder="Жишээ: 1 килобайт хэдэн байт вэ?" />
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="optA">A сонголт *</label>
+              <input id="optA" type="text" required placeholder="512" />
+            </div>
+            <div class="field">
+              <label for="optB">B сонголт *</label>
+              <input id="optB" type="text" required placeholder="1024" />
+            </div>
+            <div class="field">
+              <label for="optC">C сонголт *</label>
+              <input id="optC" type="text" required placeholder="2048" />
+            </div>
+            <div class="field">
+              <label for="optD">D сонголт *</label>
+              <input id="optD" type="text" required placeholder="4096" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="correctOpt">Зөв хариулт *</label>
+            <select id="correctOpt">
+              <option value="A">A</option>
+              <option value="B" selected>B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+          </div>
+          <button type="submit">Асуулт нэмэх</button>
+          <div class="msg-box" id="manual-msg"></div>
+        </form>
+
+        <!-- 2. Файл upload -->
+        <div id="file-panel" class="hidden">
+          <div class="field">
+            <label for="qFile">CSV эсвэл JSON файл сонгох</label>
+            <input id="qFile" type="file" accept=".csv,.json,.txt" />
+            <div class="hint">
+              CSV баганууд: <code>question,option_a,option_b,option_c,option_d,correct</code> (correct нь A/B/C/D эсвэл 0..3)
+            </div>
+          </div>
+          <div class="chk-row">
+            <input id="replace-on-file" type="checkbox" />
+            <label for="replace-on-file">Оруулахаас өмнө хуучин асуултуудыг устгаж шинэ тестээр солих</label>
+          </div>
+          <button type="button" id="upload-file-btn">Файлаас асуулт хадгалах</button>
+          <div class="msg-box" id="file-msg"></div>
+        </div>
+
+        <!-- 3. SQL -->
+        <div id="sql-panel" class="hidden">
+          <div class="field">
+            <label for="sqlInput">SQL командууд (`quiz_questions` хүснэгт дээр)</label>
+            <textarea id="sqlInput" class="sql-area">INSERT INTO quiz_questions (question_text, option_a, option_b, option_c, option_d, correct_option, sort_order, is_active)
+VALUES
+('HTTP 404 статус код юуг илэрхийлдэг вэ?', 'Амжилттай', 'Олдсонгүй (Not Found)', 'Хандах эрхгүй', 'Серверийн алдаа', 'B', 100, 1);</textarea>
+          </div>
+          <button type="button" id="run-sql-btn">SQL ажиллуулах</button>
+          <div class="msg-box" id="sql-msg"></div>
+        </div>
+      </div>
+
+      <!-- Одоо баазад байгаа асуултууд -->
+      <div class="section-box">
+        <h2>Баазад байгаа асуултууд (<span id="q-count">0</span>)</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Асуулт</th>
+                <th>A</th>
+                <th>B</th>
+                <th>C</th>
+                <th>D</th>
+                <th>Зөв</th>
+                <th>Үйлдэл</th>
+              </tr>
+            </thead>
+            <tbody id="q-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const authRaw = sessionStorage.getItem('quizTeacherAuth');
+      if (authRaw) {
+        try {
+          const auth = JSON.parse(authRaw);
+          if (auth?.fullName) {
+            document.getElementById('teacher-name').textContent = `Багш: ${auth.fullName}`;
+          }
+        } catch {}
+      }
+
+      let allRows = [];
+      let filteredRows = [];
+
+      const groupFilter = document.getElementById('group-filter');
+      const searchInput = document.getElementById('search-input');
+      const statusBar = document.getElementById('status-bar');
+
+      function populateGroups(rows) {
+        const currentVal = groupFilter.value;
+        const groups = [...new Set(rows.map((r) => r.class_name).filter(Boolean))].sort();
+        groupFilter.innerHTML =
+          '<option value="">Бүх бүлэг (M.SW...)</option>' +
+          groups.map((g) => `<option value="${g}">${g}</option>`).join('');
+        if (groups.includes(currentVal)) {
+          groupFilter.value = currentVal;
+        }
+      }
+
+      function formatTime(dt) {
+        if (!dt) return '-';
+        const d = new Date(dt);
+        if (Number.isNaN(d.getTime())) return String(dt);
+        return d.toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+
+      function renderTable() {
+        const selectedGroup = groupFilter.value.trim().toLowerCase();
+        const q = searchInput.value.trim().toLowerCase();
+
+        filteredRows = allRows.filter((r) => {
+          const matchGroup = !selectedGroup || String(r.class_name || '').toLowerCase() === selectedGroup;
+          const matchQuery =
+            !q ||
+            String(r.full_name || '').toLowerCase().includes(q) ||
+            String(r.username || '').toLowerCase().includes(q) ||
+            String(r.class_name || '').toLowerCase().includes(q);
+          return matchGroup && matchQuery;
+        });
+
+        const tbody = document.getElementById('tbody');
+        if (filteredRows.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7">Тохирох оюутны мэдээлэл олдсонгүй.</td></tr>';
+        } else {
+          tbody.innerHTML = filteredRows
+            .map((r) => {
+              const isPresent = r.attendance_status === 'present' || r.attendance_status === 'late';
+              const scoreText =
+                r.score !== null && r.score !== undefined
+                  ? `${r.score} / ${r.total_questions ?? ''}`
+                  : '-';
+              return `
+                <tr>
+                  <td>${r.full_name}</td>
+                  <td>${r.class_name || '-'}</td>
+                  <td>${r.username || '-'}</td>
+                  <td class="${isPresent ? 'badge-present' : 'badge-absent'}">${r.attendance_status}</td>
+                  <td>${scoreText}</td>
+                  <td>${r.duration_seconds ?? '-'}</td>
+                  <td>${formatTime(r.check_in_at)}</td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+
+        statusBar.textContent = `Харуулж буй мөр: ${filteredRows.length} / ${allRows.length} | Шинэчилсэн: ${new Date().toLocaleTimeString('mn-MN')}`;
+      }
+
+      async function loadDashboard() {
+        try {
+          const res = await fetch('/api/admin/overview');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const sum = data.summary || {};
+          allRows = data.rows || [];
+
+          document.getElementById('s-students').textContent = sum.totalStudents ?? 0;
+          document.getElementById('s-present').textContent = sum.presentToday ?? 0;
+          document.getElementById('s-attempts').textContent = sum.totalAttempts ?? 0;
+          document.getElementById('s-avg').textContent = sum.avgScore ?? 0;
+
+          populateGroups(allRows);
+          renderTable();
+        } catch (err) {
+          statusBar.textContent = `Алдаа: API сервер ажиллаж байгаа эсэхийг шалгана уу (${err.message})`;
+        }
+      }
+
+      async function loadQuestions() {
+        try {
+          const res = await fetch('/api/admin/questions');
+          const data = await res.json();
+          const list = data.questions || [];
+          document.getElementById('q-count').textContent = list.length;
+          const qTbody = document.getElementById('q-tbody');
+          if (list.length === 0) {
+            qTbody.innerHTML = '<tr><td colspan="8">Одоогоор асуулт бүртгэгдээгүй байна.</td></tr>';
+          } else {
+            qTbody.innerHTML = list
+              .map(
+                (q) => `
+                <tr>
+                  <td>${q.id}</td>
+                  <td>${q.question_text}</td>
+                  <td>${q.option_a}</td>
+                  <td>${q.option_b}</td>
+                  <td>${q.option_c}</td>
+                  <td>${q.option_d}</td>
+                  <td><strong>${q.correct_option}</strong></td>
+                  <td><button class="danger" onclick="deleteQuestion(${q.id})">Устгах</button></td>
+                </tr>
+              `
+              )
+              .join('');
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      window.deleteQuestion = async function (id) {
+        await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' });
+        loadQuestions();
+      };
+
+      // Таб сэлгэх
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const manualForm = document.getElementById('manual-form');
+      const filePanel = document.getElementById('file-panel');
+      const sqlPanel = document.getElementById('sql-panel');
+
+      tabBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          const t = btn.dataset.tab;
+          manualForm.classList.toggle('hidden', t !== 'manual');
+          filePanel.classList.toggle('hidden', t !== 'file');
+          sqlPanel.classList.toggle('hidden', t !== 'sql');
+        });
+      });
+
+      // 1. Гараар нэмэх
+      manualForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgEl = document.getElementById('manual-msg');
+        msgEl.textContent = '';
+
+        const payload = {
+          questions: [
+            {
+              question_text: document.getElementById('qText').value.trim(),
+              option_a: document.getElementById('optA').value.trim(),
+              option_b: document.getElementById('optB').value.trim(),
+              option_c: document.getElementById('optC').value.trim(),
+              option_d: document.getElementById('optD').value.trim(),
+              correct_option: document.getElementById('correctOpt').value,
+            },
+          ],
+        };
+
+        try {
+          const res = await fetch('/api/admin/questions/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Нэмэхэд алдаа гарлаа');
+          msgEl.className = 'msg-box msg-ok';
+          msgEl.textContent = 'Асуулт амжилттай нэмэгдлээ.';
+          document.getElementById('qText').value = '';
+          document.getElementById('optA').value = '';
+          document.getElementById('optB').value = '';
+          document.getElementById('optC').value = '';
+          document.getElementById('optD').value = '';
+          loadQuestions();
+        } catch (err) {
+          msgEl.className = 'msg-box msg-err';
+          msgEl.textContent = err.message;
+        }
+      });
+
+      // 2. Файл задалж оруулах (CSV / JSON)
+      function parseCsvLine(line) {
+        const out = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (ch === ',' && !inQuotes) {
+            out.push(cur.trim());
+            cur = '';
+          } else {
+            cur += ch;
+          }
+        }
+        out.push(cur.trim());
+        return out;
+      }
+
+      function parseUploadedContent(filename, text) {
+        const trimmed = text.trim();
+        if (filename.toLowerCase().endsWith('.json') || trimmed.startsWith('[') || trimmed.startsWith('{')) {
+          const parsed = JSON.parse(trimmed);
+          return Array.isArray(parsed) ? parsed : parsed.questions || [];
+        }
+        const lines = trimmed.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        if (lines.length === 0) return [];
+        const firstCols = parseCsvLine(lines[0]).map((c) => c.toLowerCase());
+        const hasHeader = firstCols.includes('question') || firstCols.includes('question_text');
+        const startIdx = hasHeader ? 1 : 0;
+        const items = [];
+        for (let i = startIdx; i < lines.length; i++) {
+          const cols = parseCsvLine(lines[i]);
+          if (cols.length >= 6) {
+            items.push({
+              question_text: cols[0],
+              option_a: cols[1],
+              option_b: cols[2],
+              option_c: cols[3],
+              option_d: cols[4],
+              correct_option: cols[5],
+            });
+          }
+        }
+        return items;
+      }
+
+      document.getElementById('upload-file-btn').addEventListener('click', async () => {
+        const msgEl = document.getElementById('file-msg');
+        const fileInput = document.getElementById('qFile');
+        const file = fileInput.files?.[0];
+        if (!file) {
+          msgEl.className = 'msg-box msg-err';
+          msgEl.textContent = 'Эхлээд CSV эсвэл JSON файл сонгоно уу.';
+          return;
+        }
+
+        try {
+          const text = await file.text();
+          const parsedQuestions = parseUploadedContent(file.name, text);
+          if (parsedQuestions.length === 0) {
+            throw new Error('Файлаас асуулт уншиж чадсангүй.');
+          }
+          const res = await fetch('/api/admin/questions/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              questions: parsedQuestions,
+              replaceExisting: document.getElementById('replace-on-file').checked,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Хадгалахад алдаа гарлаа');
+          msgEl.className = 'msg-box msg-ok';
+          msgEl.textContent = `${data.insertedCount} асуулт амжилттай хадгалагдлаа.`;
+          fileInput.value = '';
+          loadQuestions();
+        } catch (err) {
+          msgEl.className = 'msg-box msg-err';
+          msgEl.textContent = err.message;
+        }
+      });
+
+      // 3. SQL ажиллуулах
+      document.getElementById('run-sql-btn').addEventListener('click', async () => {
+        const msgEl = document.getElementById('sql-msg');
+        const sql = document.getElementById('sqlInput').value;
+        try {
+          const res = await fetch('/api/admin/questions/sql', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'SQL ажиллах үед алдаа гарлаа');
+          msgEl.className = 'msg-box msg-ok';
+          msgEl.textContent = `SQL амжилттай ажиллаа (${data.executedStatements} илэрхийлэл, ${data.affectedRows} мөр нөлөөлөв).`;
+          loadQuestions();
+        } catch (err) {
+          msgEl.className = 'msg-box msg-err';
+          msgEl.textContent = err.message;
+        }
+      });
+
+      groupFilter.addEventListener('change', renderTable);
+      searchInput.addEventListener('input', renderTable);
+      document.getElementById('refresh-btn').addEventListener('click', () => {
+        loadDashboard();
+        loadQuestions();
+      });
+
+      document.getElementById('csv-btn').addEventListener('click', () => {
+        const header = [
+          'full_name',
+          'class_name',
+          'username',
+          'attendance_status',
+          'score',
+          'total_questions',
+          'duration_seconds',
+          'check_in_at',
+        ];
+        const lines = [
+          header.join(','),
+          ...filteredRows.map((r) =>
+            header.map((k) => `"${String(r[k] ?? '').replace(/"/g, '""')}"`).join(',')
+          ),
+        ];
+        const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mubis-3d-quiz-report.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      loadDashboard();
+      loadQuestions();
+    </script>
+  </body>
+</html>

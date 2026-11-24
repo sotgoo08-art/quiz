@@ -1,16 +1,196 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="mn">
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/blank-icon-v2.svg" />
-  <title>VR Quiz - Прототип 1</title>
-  <style>
-    html, body { margin: 0; overflow: hidden; background: #0f172a; }
-    canvas { display: block; }
-  </style>
-</head>
-<body>
-  <script type="module" src="./main.js"></script>
-</body>
-</html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MUBIS 3D VR Quiz</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: #0b1026;
+        color: #f8fafc;
+      }
+      .top-bar {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        z-index: 20;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        pointer-events: none;
+      }
+      .hud-pill {
+        pointer-events: auto;
+        background: rgba(15, 23, 42, 0.78);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        backdrop-filter: blur(8px);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .hud-link {
+        pointer-events: auto;
+        text-decoration: none;
+        color: #e2e8f0;
+        background: rgba(79, 70, 229, 0.85);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .hud-link:hover { background: #4338ca; }
+      .hidden { display: none !important; }
 
+      #login-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(6, 10, 24, 0.85);
+        backdrop-filter: blur(8px);
+        padding: 16px;
+      }
+      .login-card {
+        width: 100%;
+        max-width: 430px;
+        background: #111827;
+        border: 1px solid rgba(129, 140, 248, 0.35);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .login-card h2 { margin: 0 0 6px; font-size: 20px; }
+      .login-card p { margin: 0 0 16px; color: #94a3b8; font-size: 13px; }
+
+      .role-switch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        background: #0b1026;
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid #1e293b;
+        margin-bottom: 16px;
+      }
+      .role-btn {
+        padding: 9px 12px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .role-btn.active {
+        background: #4f46e5;
+        color: #ffffff;
+      }
+
+      .field { margin-bottom: 12px; }
+      .field label { display: block; font-size: 12px; color: #cbd5e1; margin-bottom: 4px; }
+      .field input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #fff;
+        font-size: 14px;
+      }
+      .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .hint { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+      .btn-start {
+        width: 100%;
+        margin-top: 8px;
+        padding: 11px 16px;
+        border: 0;
+        border-radius: 10px;
+        background: #6366f1;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-start:hover { background: #4f46e5; }
+      .err-msg { color: #f87171; font-size: 13px; margin-top: 8px; min-height: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <div class="hud-pill" id="hud-info">
+        <span id="hud-student">Хэрэглэгч: Нэвтрээгүй</span>
+        <span>|</span>
+        <span id="hud-score">Оноо: 0</span>
+      </div>
+      <a class="hud-link" id="dashboard-link" href="/dashboard.html">Багшийн дашбоард</a>
+    </div>
+
+    <div id="login-overlay">
+      <form class="login-card" id="login-form">
+        <h2 id="form-title">3D VR Тестэд бүртгүүлэх</h2>
+        <p id="form-subtitle">Дүрээ сонгоод нэвтэрнэ үү. Оюутны ирц болон оноо өгөгдлийн санд хадгалагдана.</p>
+
+        <div class="role-switch" role="tablist" aria-label="Хэрэглэгчийн төрөл">
+          <button type="button" class="role-btn active" id="role-student-btn" data-role="student">
+            Оюутан
+          </button>
+          <button type="button" class="role-btn" id="role-teacher-btn" data-role="teacher">
+            Багш
+          </button>
+        </div>
+
+        <div class="field">
+          <label for="fullName" id="fullName-label">Овог, нэр *</label>
+          <input id="fullName" name="fullName" type="text" required placeholder="Ш. Отгонжаргал" />
+        </div>
+
+        <div id="student-fields">
+          <div class="row-2">
+            <div class="field">
+              <label for="className">Бүлгийн код *</label>
+              <input
+                id="className"
+                name="className"
+                type="text"
+                required
+                placeholder="M.SW206"
+                pattern="^M\.SW[A-Za-z0-9_-]+$"
+                title="M.SW кодтой бүлэг оруулна уу (жнь: M.SW206)"
+              />
+              <div class="hint">Жишээ: M.SW206</div>
+            </div>
+            <div class="field">
+              <label for="username">Оюутны код</label>
+              <input id="username" name="username" type="text" placeholder="M.SW26D123" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="pin">PIN код (заавал биш)</label>
+            <input id="pin" name="pin" type="password" placeholder="1234" />
+          </div>
+        </div>
+
+        <div id="teacher-fields" class="hidden">
+          <div class="hint">Нууц үг шаардахгүйгээр шууд Багшийн дашбоард руу орно.</div>
+        </div>
+
+        <button type="submit" class="btn-start" id="start-btn">Шалгалт эхлүүлэх</button>
+        <div class="err-msg" id="login-error"></div>
+      </form>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
